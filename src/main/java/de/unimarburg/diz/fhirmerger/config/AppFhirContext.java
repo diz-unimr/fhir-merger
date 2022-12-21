@@ -1,0 +1,12 @@
+package de.unimarburg.diz.fhirmerger.config;
+
+import ca.uhn.fhir.context.FhirContext;
+
+public class AppFhirContext {
+
+    private static final FhirContext fhirContext = FhirContext.forR4();
+
+    public static FhirContext getInstance() {
+        return fhirContext;
+    }
+}

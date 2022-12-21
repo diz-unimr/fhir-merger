@@ -1,0 +1,6 @@
+spring:
+  kafka:
+    input-topics: p21-fhir, bar-fhir-idat
+    output-topic: diagnose
+fhir:
+  match-expression: Bundle.entry.where(resource.is(Condition) and resource.recordedDate > @2021)

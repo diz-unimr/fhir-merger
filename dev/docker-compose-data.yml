@@ -1,0 +1,19 @@
+version: "3.7"
+
+services:
+
+  p21-data-loader:
+    image: confluentinc/cp-kafkacat:7.0.1
+    entrypoint: ["/bin/bash", "-c"]
+    command: >
+      "kafkacat -b kafka:19092 -K: -t p21-fhir -P -l /data/p21-data.ndjson"
+    volumes:
+      - ./p21-data.ndjson:/data/p21-data.ndjson:ro
+
+  bar-data-loader:
+    image: confluentinc/cp-kafkacat:7.0.1
+    entrypoint: ["/bin/bash", "-c"]
+    command: >
+      "kafkacat -b kafka:19092 -K: -t bar-fhir-idat -P -l /data/bar-data.ndjson"
+    volumes:
+      - ./bar-data.ndjson:/data/bar-data.ndjson:ro
