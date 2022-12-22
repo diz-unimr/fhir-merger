@@ -14,8 +14,15 @@ public class TopicKeyProcessor extends ContextualProcessor<String, Bundle, Strin
             .orElseThrow()
             .topic();
 
-        // strip meta data
+        // set topic name as bundle source
+        var value = record.value();
+        value
+            .getMeta()
+            .setSource(topic);
+        // set key prefix from source topic
         var topicPrefix = StringUtils.substringBefore(topic, "-");
-        context().forward(record.withKey(String.format("%s-%s", topicPrefix, record.key())));
+
+        context().forward(new Record<>(String.format("%s-%s", topicPrefix, record.key()), value,
+            record.timestamp(), record.headers()));
     }
 }

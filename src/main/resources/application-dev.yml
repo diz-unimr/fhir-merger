@@ -1,6 +1,7 @@
-spring:
-  kafka:
-    input-topics: p21-fhir, bar-fhir-idat
-    output-topic: diagnose
-fhir:
-  match-expression: Bundle.entry.where(resource.is(Condition) and resource.recordedDate > @2021)
+merger:
+  input:
+    - topic: p21-fhir
+      expression: Bundle.entry.where(resource.is(Condition) and resource.recordedDate <= @2021)
+    - topic: bar-fhir-idat
+      expression: Bundle.where((entry.resource.is(Condition) and entry.resource.recordedDate > @2021).exists())
+  output.topic: test

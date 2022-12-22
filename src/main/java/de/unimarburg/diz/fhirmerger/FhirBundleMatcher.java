@@ -1,26 +1,26 @@
 package de.unimarburg.diz.fhirmerger;
 
 import java.util.List;
+import java.util.Map;
 import org.hl7.fhir.instance.model.api.IBase;
-import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.hapi.fluentpath.FhirPathR4;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
 public class FhirBundleMatcher {
 
     private final FhirPathR4 engine;
-    private final String expression;
+    private final Map<String, String> expressions;
 
     @Autowired
     public FhirBundleMatcher(FhirPathR4 engine,
-        @Value(value = "${fhir.match-expression}") String expression) {
+        @Qualifier("matchExpressions") Map<String, String> expressions) {
         this.engine = engine;
-        this.expression = expression;
+        this.expressions = expressions;
     }
 
     Bundle parse(Bundle bundle) {
@@ -34,14 +34,23 @@ public class FhirBundleMatcher {
             return b;
         }
 
-        return new Bundle().setEntry(matches
+        var result = new Bundle();
+        result.setMeta(bundle.getMeta());
+        return result.setEntry(matches
             .stream()
             .map(BundleEntryComponent.class::cast)
             .toList());
 
     }
 
-    private List<IBase> match(IBaseResource resource) {
-        return engine.evaluate(resource, expression, IBase.class);
+    private List<IBase> match(Bundle bundle) {
+        // extract source topic
+        var source = bundle
+            .getMeta()
+            .getSource();
+        // lookup match expression
+        var expr = expressions.get(source);
+
+        return engine.evaluate(bundle, expr, IBase.class);
     }
 }

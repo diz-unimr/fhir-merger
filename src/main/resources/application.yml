@@ -2,8 +2,6 @@ spring:
   jmx:
     enabled: true
   kafka:
-    input-topics:
-    output-topic:
     consumer:
       properties:
         spring.json.use.type.headers: false
@@ -22,8 +20,14 @@ spring:
       replication-factor: 3
       application-id: fhir-merger
 
-fhir:
-  match-expression:
+merger:
+  input:
+    - topic:
+      expression:
+    - topic:
+      expression:
+  output.topic:
+
 
 management:
   server:
