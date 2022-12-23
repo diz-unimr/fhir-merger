@@ -11,7 +11,7 @@ RUN gradle build --info && \
     java -Djarmode=layertools -jar build/libs/*.jar extract
 
 FROM gcr.io/distroless/java17:nonroot
-WORKDIR /opt/kafka-streams-template
+WORKDIR /opt/fhir-merger
 COPY --from=build /home/gradle/src/dependencies/ ./
 COPY --from=build /home/gradle/src/spring-boot-loader/ ./
 COPY --from=build /home/gradle/src/application/ ./
