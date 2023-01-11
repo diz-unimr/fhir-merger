@@ -24,8 +24,10 @@ merger:
   input:
     - topic:
       expression:
+      type:
     - topic:
       expression:
+      type:
   output.topic:
 
 

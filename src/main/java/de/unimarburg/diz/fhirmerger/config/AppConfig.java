@@ -2,9 +2,8 @@ package de.unimarburg.diz.fhirmerger.config;
 
 
 import ca.uhn.fhir.context.FhirContext;
-import de.unimarburg.diz.fhirmerger.config.MergerProperties.TopicMatcher;
-import java.util.Map;
-import java.util.stream.Collectors;
+import de.unimarburg.diz.fhirmerger.config.MergerProperties.MatcherProperties;
+import java.util.List;
 import org.hl7.fhir.r4.hapi.fluentpath.FhirPathR4;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
@@ -22,10 +21,10 @@ public class AppConfig {
     }
 
     @Bean
-    public Map<String, String> matchExpressions(MergerProperties properties) {
+    public List<MatcherProperties> matcherProperties(MergerProperties properties) {
         return properties
             .getInput()
             .stream()
-            .collect(Collectors.toMap(TopicMatcher::getTopic, TopicMatcher::getExpression));
+            .toList();
     }
 }

@@ -2,6 +2,11 @@ merger:
   input:
     - topic: p21-fhir
       expression: Bundle.entry.where(resource.is(Condition) and resource.recordedDate <= @2021)
+      type: fhir
     - topic: bar-fhir-idat
       expression: Bundle.where((entry.resource.is(Condition) and entry.resource.recordedDate > @2021).exists())
+      type: fhir
+    - topic: p21-fhir
+      expression: < 2021-01-01
+      type: timestamp
   output.topic: test
