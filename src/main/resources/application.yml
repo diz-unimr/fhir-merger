@@ -12,9 +12,9 @@ spring:
     bootstrap-servers: ${BOOTSTRAP_SERVERS:localhost:9092}
     security.protocol: ${SECURITY_PROTOCOL:PLAINTEXT}
     ssl:
-      trust-store-location: file://${SSL_TRUST_STORE_LOCATION_INTERNAL:/opt/kafka-streams-template/ssl/truststore.jks}
+      trust-store-location: file://${SSL_TRUST_STORE_LOCATION_INTERNAL:/opt/fhir-merger/ssl/truststore.jks}
       trust-store-password: ${SSL_TRUST_STORE_PASSWORD}
-      key-store-location: file://${SSL_KEY_STORE_LOCATION_INTERNAL:/opt/kafka-streams-template/ssl/keystore.jks}
+      key-store-location: file://${SSL_KEY_STORE_LOCATION_INTERNAL:/opt/fhir-merger/ssl/keystore.jks}
       key-store-password: ${SSL_KEY_STORE_PASSWORD}
     streams:
       replication-factor: 3
