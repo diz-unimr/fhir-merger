@@ -14,6 +14,22 @@ services:
     image: confluentinc/cp-kafkacat:7.0.1
     entrypoint: ["/bin/bash", "-c"]
     command: >
-      "kafkacat -b kafka:19092 -K: -t bar-fhir-idat -P -l /data/bar-data.ndjson"
+      "kafkacat -b kafka:19092 -K: -t bar-fhir -P -l /data/bar-data.ndjson"
     volumes:
       - ./bar-data.ndjson:/data/bar-data.ndjson:ro
+
+  patient-data-loader:
+    image: confluentinc/cp-kafkacat:7.0.1
+    entrypoint: ["/bin/bash", "-c"]
+    command: >
+      "kafkacat -b kafka:19092 -K: -t patient-fhir -P -l /data/patient-data.ndjson"
+    volumes:
+      - ./patient-data.ndjson:/data/patient-data.ndjson:ro
+
+  adt-data-loader:
+    image: confluentinc/cp-kafkacat:7.0.1
+    entrypoint: ["/bin/bash", "-c"]
+    command: >
+      "kafkacat -b kafka:19092 -K: -t adt-fhir -P -l /data/adt-data.ndjson"
+    volumes:
+      - ./adt-data.ndjson:/data/adt-data.ndjson:ro

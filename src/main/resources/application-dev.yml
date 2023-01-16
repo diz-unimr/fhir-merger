@@ -6,7 +6,10 @@ merger:
     - topic: bar-fhir-idat
       expression: Bundle.where((entry.resource.is(Condition) and entry.resource.recordedDate > @2021).exists())
       type: fhir
-    - topic: p21-fhir
-      expression: < 2021-01-01
-      type: timestamp
+    - topic: patient-fhir
+      expression: Bundle.entry.where(resource.is(Patient) and resource.meta.lastUpdated < @2022-02-19)
+      type: fhir
+    - topic: adt-fhir
+      expression: Bundle.entry.where(true)
+      type: fhir
   output.topic: test
