@@ -1,7 +1,8 @@
 package de.unimarburg.diz.fhirmerger;
 
 import de.unimarburg.diz.fhirmerger.config.MergerProperties;
-import de.unimarburg.diz.fhirmerger.config.MergerProperties.TopicMatcher;
+import de.unimarburg.diz.fhirmerger.config.MergerProperties.MatcherProperties;
+import de.unimarburg.diz.fhirmerger.matcher.BaseMatcher;
 import de.unimarburg.diz.fhirmerger.serde.FhirSerde;
 import org.apache.kafka.common.serialization.Serdes.StringSerde;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -16,11 +17,11 @@ public class Processor {
 
     private final MergerProperties properties;
 
-    private final FhirBundleMatcher matcher;
+    private final BaseMatcher[] matchers;
 
-    public Processor(MergerProperties properties, FhirBundleMatcher matcher) {
+    public Processor(MergerProperties properties, BaseMatcher... matchers) {
         this.properties = properties;
-        this.matcher = matcher;
+        this.matchers = matchers;
     }
 
     @Autowired
@@ -29,12 +30,10 @@ public class Processor {
         var stream = streamsBuilder.stream(properties
             .getInput()
             .stream()
-            .map(TopicMatcher::getTopic)
+            .map(MatcherProperties::getTopic)
             .toList(), Consumed.with(new StringSerde(), new FhirSerde<>(Bundle.class)));
         stream
-            .process(TopicKeyProcessor::new)
-            .mapValues(matcher::parse)
-            .filter((k, v) -> v != null)
+            .process(() -> new TopicProcessor(matchers))
             .to(properties
                 .getOutput()
                 .getTopic(), Produced.with(new StringSerde(), new FhirSerde<>(Bundle.class)));

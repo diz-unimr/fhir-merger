@@ -10,13 +10,13 @@ import org.springframework.validation.annotation.Validated;
 public class MergerProperties {
 
     private final Output output = new Output();
-    private List<TopicMatcher> input;
+    private List<MatcherProperties> input;
 
-    public List<TopicMatcher> getInput() {
+    public List<MatcherProperties> getInput() {
         return input;
     }
 
-    public void setInput(List<TopicMatcher> input) {
+    public void setInput(List<MatcherProperties> input) {
         this.input = input;
     }
 
@@ -24,10 +24,12 @@ public class MergerProperties {
         return output;
     }
 
-    public static class TopicMatcher {
+    public static class MatcherProperties {
 
         private String topic;
         private String expression;
+        private String type;
+
 
         public String getTopic() {
             return topic;
@@ -43,6 +45,14 @@ public class MergerProperties {
 
         public void setExpression(String expression) {
             this.expression = expression;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
         }
 
     }
