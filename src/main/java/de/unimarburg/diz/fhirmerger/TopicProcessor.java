@@ -41,8 +41,6 @@ public class TopicProcessor extends ContextualProcessor<String, Bundle, String, 
         // set key prefix from source topic
         var topicPrefix = StringUtils.substringBefore(topic, "-");
 
-        context().forward(
-            new Record<>(String.format("%s-%s", topicPrefix, record.key()), record.value(),
-                record.timestamp(), record.headers()));
+        context().forward(matched.withKey(String.format("%s-%s", topicPrefix, record.key())));
     }
 }
