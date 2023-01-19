@@ -17,6 +17,7 @@ import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent;
 import org.hl7.fhir.r4.model.Condition;
 import org.hl7.fhir.r4.model.Encounter;
 import org.hl7.fhir.r4.model.Organization;
+import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.Period;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -117,5 +118,36 @@ class FhirPathMatcherTests {
         var result = matcher.match(new Record<>("key", bundle, 0), inputTopic);
 
         assertThat(result != null).isEqualTo(isMatch);
+    }
+
+    @Test
+    void match_FiltersPatientModule() {
+
+        var inputTopic = "patient";
+        var expression = "Bundle.entry.where(resource.is(Patient) and resource.meta.lastUpdated < @2022-02-19)";
+
+        var patient = new Patient();
+        patient
+            .getMeta()
+            .setLastUpdated(Date.from(LocalDate
+                .of(2022, 2, 18)
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()));
+
+        var bundle = new Bundle();
+        bundle.addEntry(new BundleEntryComponent().setResource(patient));
+
+        var matcherProps = new MatcherProperties();
+        matcherProps.setTopic(inputTopic);
+        matcherProps.setExpression(expression);
+        matcherProps.setType(FhirPathMatcher.type);
+
+        var matcher = new FhirPathMatcher(new FhirPathR4(FhirContext.forR4()),
+            Map.of(inputTopic, List.of(matcherProps)));
+        var result = matcher.match(new Record<>("key", bundle, 0), inputTopic);
+
+        assertThat(result
+            .value()
+            .getEntryFirstRep()).isEqualTo(bundle.getEntryFirstRep());
     }
 }
