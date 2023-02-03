@@ -10,6 +10,7 @@ import org.hl7.fhir.instance.model.api.IBase;
 import org.hl7.fhir.r4.hapi.fluentpath.FhirPathR4;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent;
+import org.hl7.fhir.r4.model.Bundle.BundleType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -59,6 +60,7 @@ public class FhirPathMatcher extends BaseMatcher {
         }
 
         var result = new Bundle();
+        result.setType(BundleType.BATCH);
         result.setMeta(bundle.getMeta());
         result.setEntry(matches
             .stream()
