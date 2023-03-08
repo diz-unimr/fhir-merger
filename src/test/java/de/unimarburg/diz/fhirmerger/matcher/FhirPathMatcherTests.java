@@ -15,13 +15,16 @@ import org.hl7.fhir.r4.hapi.fluentpath.FhirPathR4;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent;
 import org.hl7.fhir.r4.model.Condition;
+import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.Encounter;
 import org.hl7.fhir.r4.model.Organization;
 import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.Period;
+import org.hl7.fhir.r4.model.Procedure;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class FhirPathMatcherTests {
@@ -34,14 +37,19 @@ class FhirPathMatcherTests {
             false));
     }
 
-    @Test
-    void match_FiltersConditionModule() {
+    @ParameterizedTest()
+    @CsvSource({"2023-03-08,true", "2017-04-01,false"})
+    void match_FiltersConditionModule(String recorded, boolean matches) {
 
         var inputTopic = "bar";
         // pick whole bundle
-        var expression = "Bundle.where((entry.resource.is(Condition) and entry.resource.recordedDate > @2021).exists())";
+        var expression = "Bundle.where(entry.where(resource.is(Condition) and resource.recordedDate >= @2021-04-15))";
 
-        var condition = new Condition().setRecordedDate(new Date());
+        var recordedDate = Date.from(LocalDate
+            .parse(recorded)
+            .atStartOfDay(ZoneId.of("Europe/Berlin"))
+            .toInstant());
+        var condition = new Condition().setRecordedDate(recordedDate);
         var bundle = new Bundle();
         bundle
             .getMeta()
@@ -59,23 +67,34 @@ class FhirPathMatcherTests {
             Map.of(inputTopic, List.of(matcherProps)));
         var result = matcher.match(new Record<>("key", bundle, 0), inputTopic);
 
-        assertThat(result.value()).isEqualTo(bundle);
+        if (matches) {
+            assertThat(result.value()).isEqualTo(bundle);
+        } else {
+            assertThat(result).isNull();
+        }
+
     }
 
-    @Test
-    void match_FiltersProcedureModule() {
+    @ParameterizedTest()
+    @CsvSource({"2023-03-08,true", "2017-04-01,false"})
+    void match_FiltersProcedureModule(String recorded, boolean matches) {
 
         var inputTopic = "bar";
         // pick whole bundle
-        var expression = "Bundle.where((entry.resource.is(Condition) and entry.resource.recordedDate > @2021).exists())";
+        var expression = "Bundle.where(entry.where(resource.is(Procedure) and resource.performed >= @2021-04-15))";
 
-        var condition = new Condition().setRecordedDate(new Date());
+        var performed = Date.from(LocalDate
+            .parse(recorded)
+            .atStartOfDay(ZoneId.of("Europe/Berlin"))
+            .toInstant());
+        var procedure = new Procedure().setPerformed(new DateTimeType(performed));
+
         var bundle = new Bundle();
         bundle
             .getMeta()
             .setSource(inputTopic);
         bundle
-            .addEntry(new BundleEntryComponent().setResource(condition))
+            .addEntry(new BundleEntryComponent().setResource(procedure))
             .addEntry(new BundleEntryComponent().setResource(new Organization()));
 
         var matcherProps = new MatcherProperties();
@@ -87,7 +106,57 @@ class FhirPathMatcherTests {
             Map.of(inputTopic, List.of(matcherProps)));
         var result = matcher.match(new Record<>("key", bundle, 0), inputTopic);
 
-        assertThat(result.value()).isEqualTo(bundle);
+        if (matches) {
+            assertThat(result.value()).isEqualTo(bundle);
+        } else {
+            assertThat(result).isNull();
+        }
+    }
+
+
+    @ParameterizedTest()
+    @CsvSource({"2017-04-01,true", "2023-03-08,false"})
+    void match_FiltersSingleProcedures(String recorded, boolean matches) {
+
+        var inputTopic = "bar";
+        // pick single Procedure
+        var expression = "Bundle.entry.where(resource.is(Procedure) and resource.performed < @2021-04-15)";
+
+        var performed = Date.from(LocalDate
+            .parse(recorded)
+            .atStartOfDay(ZoneId.of("Europe/Berlin"))
+            .toInstant());
+        var procedure = new Procedure().setPerformed(new DateTimeType(performed));
+
+        var bundle = new Bundle();
+        bundle
+            .getMeta()
+            .setSource(inputTopic);
+        bundle
+            .addEntry(new BundleEntryComponent().setResource(procedure))
+            .addEntry(new BundleEntryComponent().setResource(new Organization()));
+
+        var matcherProps = new MatcherProperties();
+        matcherProps.setTopic(inputTopic);
+        matcherProps.setExpression(expression);
+        matcherProps.setType(FhirPathMatcher.type);
+
+        var matcher = new FhirPathMatcher(new FhirPathR4(FhirContext.forR4()),
+            Map.of(inputTopic, List.of(matcherProps)));
+        var result = matcher.match(new Record<>("key", bundle, 0), inputTopic);
+
+        if (matches) {
+            // new bundle created
+            assertThat(result.value()).isNotEqualTo(bundle);
+            // only the match is included
+            assertThat(result
+                .value()
+                .getEntry())
+                .extracting(BundleEntryComponent::getResource)
+                .containsOnly(procedure);
+        } else {
+            assertThat(result).isNull();
+        }
     }
 
     @ParameterizedTest

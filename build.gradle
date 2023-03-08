@@ -20,7 +20,7 @@ repositories {
 ext {
     set('springBootVersion', "3.0.0")
     set('springCloudVersion', "2022.0.1")
-    set("hapiFhirVersion", "6.2.2")
+    set("hapiFhirVersion", "6.4.2")
 }
 
 dependencies {
