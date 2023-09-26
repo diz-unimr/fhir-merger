@@ -41,6 +41,31 @@ class FhirPathMatcherTests {
             false));
     }
 
+    public static Parameters GET_DUMMY_PATIENT_MERGE() {
+        return new Parameters().addParameter(new ParametersParameterComponent()
+            .setName("operation")
+            .addPart(new ParametersParameterComponent()
+                .setName("type")
+                .setValue(new CodeType("add")))
+            .addPart(new ParametersParameterComponent()
+                .setName("path")
+                .setValue(new CodeType("Patient")))
+            .addPart(new ParametersParameterComponent()
+                .setName("name")
+                .setValue(new CodeType("link")))
+            .addPart(new ParametersParameterComponent()
+                .setName("value")
+                .addPart(new ParametersParameterComponent()
+                    .setName("other")
+                    .setValue(new Reference()
+                        .setReference(
+                            "Patient?identifier=https://fhir.diz.uni-marburg.de/sid/patient-id|000002")
+                        .setType("Patient")))
+                .addPart(new ParametersParameterComponent()
+                    .setName("type")
+                    .setValue(new CodeType("replaced-by")))));
+    }
+
     @ParameterizedTest()
     @CsvSource({"2023-03-08,true", "2017-04-01,false"})
     void match_FiltersConditionModule(String recorded, boolean matches) {
@@ -228,9 +253,8 @@ class FhirPathMatcherTests {
     void match_FiltersPatientModuleWithPatientPatch() {
 
         var inputTopic = "patient";
-        var expression = "Bundle.entry.where(resource.is(Patient) or resource.is(Observation) or "
-            + "(resource.is(Parameters) and (resource.parameter.part.name = 'path').exists() "
-            + "and (resource.parameter.part.value = 'Patient').exists()))";
+        var expression = "Bundle.entry.where(resource.is(Patient) or resource.is(Observation) "
+            + "or (resource.is(Parameters) and resource.parameter.part.where(name = 'path' and value = 'Patient').exists()))";
 
         var patientPatch = GET_DUMMY_PATIENT_MERGE();
 
@@ -250,16 +274,21 @@ class FhirPathMatcherTests {
         assertThat(result
             .value()
             .getEntryFirstRep()).isEqualTo(bundle.getEntryFirstRep());
-        assertThat(result.value().getEntry().size()).as("unfitting bundle entries are removed.").isEqualTo(1);
+        assertThat(result
+            .value()
+            .getEntry()
+            .size())
+            .as("unfitting bundle entries are removed.")
+            .isEqualTo(1);
     }
 
     @Test
     void match_FiltersPatientModulePatientResource() {
 
         var inputTopic = "patient";
-        var expression = "Bundle.entry.where(resource.is(Patient) or resource.is(Observation) or "
-            + "(resource.is(Parameters) and (resource.parameter.part.name = 'path').exists() "
-            + "and (resource.parameter.part.value = 'Patient').exists()))";
+        var expression = """
+            Bundle.entry.where(resource.is(Patient) or resource.is(Observation) or
+            (resource.is(Parameters) and (resource.parameter.part.where(name = 'path' and value = 'Patient')).exists()))""";
 
         var patientPatch = new Patient();
 
@@ -278,39 +307,5 @@ class FhirPathMatcherTests {
         assertThat(result
             .value()
             .getEntryFirstRep()).isEqualTo(bundle.getEntryFirstRep());
-    }
-
-    public static Parameters GET_DUMMY_PATIENT_MERGE() {
-        return new Parameters()
-            .addParameter(
-                new ParametersParameterComponent()
-                    .setName("operation")
-                    .addPart(
-                        new ParametersParameterComponent()
-                            .setName("type")
-                            .setValue(new CodeType("add")))
-                    .addPart(
-                        new ParametersParameterComponent()
-                            .setName("path")
-                            .setValue(new CodeType("Patient")))
-                    .addPart(
-                        new ParametersParameterComponent()
-                            .setName("name")
-                            .setValue(new CodeType("link")))
-                    .addPart(
-                        new ParametersParameterComponent()
-                            .setName("value")
-                            .addPart(
-                                new ParametersParameterComponent()
-                                    .setName("other")
-                                    .setValue(
-                                        new Reference()
-                                            .setReference(
-                                                "Patient?identifier=https://fhir.diz.uni-marburg.de/sid/patient-id|000002")
-                                            .setType("Patient")))
-                            .addPart(
-                                new ParametersParameterComponent()
-                                    .setName("type")
-                                    .setValue(new CodeType("replaced-by")))));
     }
 }
