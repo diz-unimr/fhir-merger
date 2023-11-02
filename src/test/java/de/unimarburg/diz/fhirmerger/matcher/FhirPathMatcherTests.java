@@ -15,9 +15,11 @@ import org.hl7.fhir.r4.hapi.fluentpath.FhirPathR4;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent;
 import org.hl7.fhir.r4.model.CodeType;
+import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Condition;
 import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.Encounter;
+import org.hl7.fhir.r4.model.Location;
 import org.hl7.fhir.r4.model.Organization;
 import org.hl7.fhir.r4.model.Parameters;
 import org.hl7.fhir.r4.model.Parameters.ParametersParameterComponent;
@@ -30,6 +32,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class FhirPathMatcherTests {
 
@@ -307,5 +310,79 @@ class FhirPathMatcherTests {
         assertThat(result
             .value()
             .getEntryFirstRep()).isEqualTo(bundle.getEntryFirstRep());
+    }
+
+    /**
+     * <p>Bundle.entry.where(resource.is(Encounter) and (resource.class.code != 'IMP' or
+     * resource.period.start >= @2022-06-14) or resource.is(Location) or
+     * resource.is(Organization))</p>
+     * <br/>We accept encounter class IMP only if it is after '2022-06-14' or it must be another
+     * encounter class. Location and Organization resources are always accepted.
+     * <li>
+     * IMP class encounter before that date are provided via p21</li>
+     * <li> other class encounter may override encounter
+     * provided by visit-to-fhir encounter since existing one have only minimal content.</li>
+     * <li> we always accept location and organization resources since they never hurt :)</li>
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"IMP", "AMB", "PRENC"})
+    void match_FiltersOldEncounterNotP21(String encClass) {
+
+        var inputTopic = "adt";
+
+        final String isNotInpatientEncounterOrWithinDateRange = "resource.is(Encounter) and (resource.class.code != 'IMP' or resource.period.start >= @2022-06-14)";
+        final String isLocationOrOrganization = "resource.is(Location) or resource.is(Organization)";
+        var expression = String.format("Bundle.entry.where(%s or %s)",
+            isNotInpatientEncounterOrWithinDateRange, isLocationOrOrganization);
+
+        var patient = new Patient();
+        var enc = new Encounter().setPeriod(new Period().setStart(Date.from(LocalDate
+            .of(2021, 7, 18)
+            .atStartOfDay(ZoneId.systemDefault())
+            .toInstant()))).setClass_(new Coding().setCode(encClass));
+
+        var org = new Organization().setName("Org1");
+        var loc = new Location().setName("her I am");
+
+        var bundle = new Bundle();
+
+        bundle.addEntry(new BundleEntryComponent().setResource(patient));
+        bundle.addEntry(new BundleEntryComponent().setResource(enc));
+        bundle.addEntry(new BundleEntryComponent().setResource(org));
+        bundle.addEntry(new BundleEntryComponent().setResource(loc));
+
+        var matcherProps = new MatcherProperties();
+        matcherProps.setTopic(inputTopic);
+        matcherProps.setExpression(expression);
+        matcherProps.setType(FhirPathMatcher.type);
+
+        var matcher = new FhirPathMatcher(new FhirPathR4(FhirContext.forR4()),
+            Map.of(inputTopic, List.of(matcherProps)));
+        var result = matcher.match(new Record<>("key", bundle, 0), inputTopic);
+
+        if (encClass.equals("IMP")) {
+            assertThat(result.value().getEntry()).as("we expect encounter resource to be filtered")
+                .noneSatisfy(a -> assertThat(
+                    a.getResource().fhirType().equals("Encounter")).isTrue());
+
+            assertThat(result.value().getEntry()).as("one Location is expected")
+                .anySatisfy(a -> assertThat(
+                    a.getResource().fhirType()
+                        .equals("Location")).isTrue());
+            assertThat(result.value().getEntry()).as("one Organization is expected")
+                .anySatisfy(a -> assertThat(
+                    a.getResource().fhirType().equals("Organization")).isTrue());
+        } else {
+            assertThat(result.value().getEntry()).as("one Encounter is expected")
+                .anySatisfy(a -> assertThat(
+                    a.getResource().fhirType().equals("Encounter")).isTrue());
+            assertThat(result.value().getEntry()).as("one Location is expected")
+                .anySatisfy(a -> assertThat(
+                    a.getResource().fhirType()
+                        .equals("Location")).isTrue());
+            assertThat(result.value().getEntry()).as("one Organization is expected")
+                .anySatisfy(a -> assertThat(
+                    a.getResource().fhirType().equals("Organization")).isTrue());
+        }
     }
 }
