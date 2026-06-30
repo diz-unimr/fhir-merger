@@ -1,2 +1,4 @@
 REPOSITORY_KICS_ARGUMENTS: --exclude-paths dev --fail-on high
 COPYPASTE_JSCPD_ARGUMENTS: --ignore-pattern "import .*;"
+ACTION_ZIZMOR_UNSECURED_ENV_VARIABLES:
+  - GITHUB_TOKEN

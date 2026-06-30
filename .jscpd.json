@@ -1,6 +1,9 @@
 {
   "threshold": 0,
-  "reporters": ["html", "markdown"],
+  "reporters": [
+    "html",
+    "markdown"
+  ],
   "ignore": [
     "**/node_modules/**",
     "**/.git/**",
@@ -21,6 +24,6 @@
     "**/*.svg",
     "**/*.zip",
     "**/*.bin",
-    "**/src/test/java"
+    "**/src/test/java/**"
   ]
 }
