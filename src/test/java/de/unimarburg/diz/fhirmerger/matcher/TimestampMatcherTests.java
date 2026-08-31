@@ -14,7 +14,7 @@ public class TimestampMatcherTests {
 
 
     @Test
-    void match_TokenizesString() {
+    void matchTokenizesString() {
         var props = new MatcherProperties();
         props.setType(TimestampMatcher.TYPE);
         props.setTopic("topic");
@@ -24,8 +24,8 @@ public class TimestampMatcherTests {
         var bundle = new Bundle();
 
         var record = new Record<>("test", bundle, Instant
-                .now()
-                .toEpochMilli());
+            .now()
+            .toEpochMilli());
         var result = matcher.match(record, "topic");
 
         assertThat(result).isEqualTo(record);
