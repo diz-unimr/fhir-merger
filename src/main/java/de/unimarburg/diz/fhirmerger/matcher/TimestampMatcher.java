@@ -2,6 +2,11 @@ package de.unimarburg.diz.fhirmerger.matcher;
 
 import de.unimarburg.diz.fhirmerger.config.ConditionalOnMatcher;
 import de.unimarburg.diz.fhirmerger.config.MergerProperties.MatcherProperties;
+import org.apache.kafka.streams.processor.api.Record;
+import org.hl7.fhir.r4.model.Bundle;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -12,30 +17,26 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.apache.kafka.streams.processor.api.Record;
-import org.hl7.fhir.r4.model.Bundle;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnMatcher(TimestampMatcher.type)
+@ConditionalOnMatcher(TimestampMatcher.TYPE)
 public class TimestampMatcher extends BaseMatcher {
 
-    static final String type = "timestamp";
+    static final String TYPE = "timestamp";
     private final Pattern pattern = Pattern.compile("(<=|<|=|>=|>)\\s*(.+)");
     private final DateTimeFormatter formatter = new DateTimeFormatterBuilder()
-        .appendPattern("yyyy-MM-dd")
-        .parseDefaulting(ChronoField.NANO_OF_DAY, 0)
-        .toFormatter()
-        .withZone(ZoneOffset.UTC);
+            .appendPattern("yyyy-MM-dd")
+            .parseDefaulting(ChronoField.NANO_OF_DAY, 0)
+            .toFormatter()
+            .withZone(ZoneOffset.UTC);
     private final Map<String, Function<Long, Boolean>> matchers;
 
     public TimestampMatcher(@Qualifier("matcherProperties") List<MatcherProperties> matcherProps) {
         matchers = matcherProps
-            .stream()
-            .filter(x -> type.equals(x.getType()))
-            .collect(Collectors.toMap(MatcherProperties::getTopic,
-                x -> buildMatcher(x.getExpression())));
+                .stream()
+                .filter(x -> TYPE.equals(x.getType()))
+                .collect(Collectors.toMap(MatcherProperties::getTopic,
+                        x -> buildMatcher(x.getExpression())));
     }
 
     @Override
@@ -61,8 +62,8 @@ public class TimestampMatcher extends BaseMatcher {
             var op = matcher.group(1);
             var dateString = matcher.group(2);
             var epochSecond = formatter
-                .parse(dateString, Instant::from)
-                .getEpochSecond();
+                    .parse(dateString, Instant::from)
+                    .getEpochSecond();
 
             return switch (op) {
                 case "<=" -> t -> t <= epochSecond;
@@ -71,10 +72,10 @@ public class TimestampMatcher extends BaseMatcher {
                 case ">=" -> t -> t >= epochSecond;
                 case ">" -> t -> t > epochSecond;
                 default -> throw new IllegalArgumentException(
-                    "Target expression does not match expected pattern: " + expression);
+                        "Target expression does not match expected pattern: " + expression);
             };
         }
         throw new IllegalArgumentException(
-            "Target expression does not match expected pattern: " + expression);
+                "Target expression does not match expected pattern: " + expression);
     }
 }
