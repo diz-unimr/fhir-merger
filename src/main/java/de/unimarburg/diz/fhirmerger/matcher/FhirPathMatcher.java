@@ -17,10 +17,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@ConditionalOnMatcher(FhirPathMatcher.type)
+@ConditionalOnMatcher(FhirPathMatcher.TYPE)
 public class FhirPathMatcher extends BaseMatcher {
 
-    static final String type = "fhir";
+    static final String TYPE = "fhir";
     private final FhirPathR4 engine;
     private final Map<String, String> matchers;
 
@@ -28,13 +28,13 @@ public class FhirPathMatcher extends BaseMatcher {
     public FhirPathMatcher(FhirPathR4 engine,
                            @Qualifier("matcherProperties") Map<String, List<MatcherProperties>> matcherProps) {
         this.matchers = matcherProps
-            .values()
-            .stream()
-            .flatMap(x -> x
+                .values()
                 .stream()
-                .filter(p -> type.equals(p.getType())))
-            .collect(
-                Collectors.toMap(MatcherProperties::getTopic, MatcherProperties::getExpression));
+                .flatMap(x -> x
+                        .stream()
+                        .filter(p -> TYPE.equals(p.getType())))
+                .collect(
+                        Collectors.toMap(MatcherProperties::getTopic, MatcherProperties::getExpression));
         this.engine = engine;
     }
 
@@ -65,9 +65,9 @@ public class FhirPathMatcher extends BaseMatcher {
         result.setType(BundleType.TRANSACTION);
         result.setMeta(bundle.getMeta());
         result.setEntry(matches
-            .stream()
-            .map(BundleEntryComponent.class::cast)
-            .toList());
+                .stream()
+                .map(BundleEntryComponent.class::cast)
+                .toList());
         return record.withValue(result);
     }
 
