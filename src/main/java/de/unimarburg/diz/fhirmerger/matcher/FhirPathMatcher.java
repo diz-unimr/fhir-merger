@@ -2,9 +2,6 @@ package de.unimarburg.diz.fhirmerger.matcher;
 
 import de.unimarburg.diz.fhirmerger.config.ConditionalOnMatcher;
 import de.unimarburg.diz.fhirmerger.config.MergerProperties.MatcherProperties;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.kafka.streams.processor.api.Record;
 import org.hl7.fhir.instance.model.api.IBase;
 import org.hl7.fhir.r4.hapi.fluentpath.FhirPathR4;
@@ -14,6 +11,10 @@ import org.hl7.fhir.r4.model.Bundle.BundleType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @ConditionalOnMatcher(FhirPathMatcher.type)
@@ -25,7 +26,7 @@ public class FhirPathMatcher extends BaseMatcher {
 
     @Autowired
     public FhirPathMatcher(FhirPathR4 engine,
-        @Qualifier("matcherProperties") Map<String, List<MatcherProperties>> matcherProps) {
+                           @Qualifier("matcherProperties") Map<String, List<MatcherProperties>> matcherProps) {
         this.matchers = matcherProps
             .values()
             .stream()
@@ -60,7 +61,8 @@ public class FhirPathMatcher extends BaseMatcher {
         }
 
         var result = new Bundle();
-        result.setType(BundleType.BATCH);
+        // Bundle type is 'transaction' by default
+        result.setType(BundleType.TRANSACTION);
         result.setMeta(bundle.getMeta());
         result.setEntry(matches
             .stream()
