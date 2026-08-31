@@ -1,19 +1,20 @@
 package de.unimarburg.diz.fhirmerger.matcher;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import de.unimarburg.diz.fhirmerger.TopicProcessor;
-import java.time.Instant;
 import org.apache.kafka.streams.processor.api.MockProcessorContext;
 import org.apache.kafka.streams.processor.api.MockProcessorContext.CapturedForward;
 import org.apache.kafka.streams.processor.api.Record;
 import org.hl7.fhir.r4.model.Bundle;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class TopicProcessorTests {
 
     @Test
-    void process_SetsTopicPrefix() {
+    void processSetsTopicPrefix() {
 
         var record = new Record<>("key", new Bundle(), Instant
             .now()
@@ -26,7 +27,8 @@ public class TopicProcessorTests {
             }
 
             @Override
-            public Record<String, Bundle> match(Record<String, Bundle> record, String topic) {
+            public Record<String, Bundle> match(Record<String, Bundle> record,
+                                                String topic) {
                 return record;
             }
         });
@@ -47,7 +49,7 @@ public class TopicProcessorTests {
     }
 
     @Test
-    void process_DoesNotForwardRecordOnNoMatch() {
+    void processDoesNotForwardRecordOnNoMatch() {
 
         var record = new Record<>("key", new Bundle(), Instant
             .now()
@@ -60,7 +62,8 @@ public class TopicProcessorTests {
             }
 
             @Override
-            public Record<String, Bundle> match(Record<String, Bundle> record, String topic) {
+            public Record<String, Bundle> match(Record<String, Bundle> record,
+                                                String topic) {
                 return null;
             }
         });
