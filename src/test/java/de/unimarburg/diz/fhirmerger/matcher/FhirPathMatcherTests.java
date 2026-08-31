@@ -1,38 +1,27 @@
 package de.unimarburg.diz.fhirmerger.matcher;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import ca.uhn.fhir.context.FhirContext;
 import de.unimarburg.diz.fhirmerger.config.MergerProperties.MatcherProperties;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
 import org.apache.kafka.streams.processor.api.Record;
 import org.hl7.fhir.r4.hapi.fluentpath.FhirPathR4;
-import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.*;
 import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent;
-import org.hl7.fhir.r4.model.CodeType;
-import org.hl7.fhir.r4.model.Coding;
-import org.hl7.fhir.r4.model.Condition;
-import org.hl7.fhir.r4.model.DateTimeType;
-import org.hl7.fhir.r4.model.Encounter;
-import org.hl7.fhir.r4.model.Location;
-import org.hl7.fhir.r4.model.Organization;
-import org.hl7.fhir.r4.model.Parameters;
 import org.hl7.fhir.r4.model.Parameters.ParametersParameterComponent;
-import org.hl7.fhir.r4.model.Patient;
-import org.hl7.fhir.r4.model.Period;
-import org.hl7.fhir.r4.model.Procedure;
-import org.hl7.fhir.r4.model.Reference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class FhirPathMatcherTests {
 
@@ -384,5 +373,30 @@ class FhirPathMatcherTests {
                 .anySatisfy(a -> assertThat(
                     a.getResource().fhirType().equals("Organization")).isTrue());
         }
+    }
+
+
+    @Test
+    void match_CreatesTransactionBundleForResources() {
+
+        var inputTopic = "patient";
+        // match by entry (resource)
+        var expression = "Bundle.entry.where(resource.is(Patient))";
+
+        var patientPatch = new Patient();
+
+        var bundle = new Bundle();
+        bundle.addEntry(new BundleEntryComponent().setResource(patientPatch));
+
+        var matcherProps = new MatcherProperties();
+        matcherProps.setTopic(inputTopic);
+        matcherProps.setExpression(expression);
+        matcherProps.setType(FhirPathMatcher.type);
+
+        var matcher = new FhirPathMatcher(new FhirPathR4(FhirContext.forR4()),
+            Map.of(inputTopic, List.of(matcherProps)));
+        var result = matcher.match(new Record<>("key", bundle, 0), inputTopic);
+
+        assertThat(result.value().getType()).isEqualTo(Bundle.BundleType.TRANSACTION);
     }
 }
