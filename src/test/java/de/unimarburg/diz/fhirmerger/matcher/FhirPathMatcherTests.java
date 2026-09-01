@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -187,8 +188,6 @@ class FhirPathMatcherTests {
         var result = matcher.match(new Record<>("key", bundle, 0), inputTopic);
 
         if (matches) {
-            // new bundle created
-            assertThat(result.value()).isNotEqualTo(bundle);
             // only the match is included
             assertThat(result
                 .value()
@@ -415,8 +414,9 @@ class FhirPathMatcherTests {
     }
 
 
-    @Test
-    void matchCreatesTransactionBundleForResources() {
+    @ParameterizedTest()
+    @EnumSource(Bundle.BundleType.class)
+    void matchPreservesBundleProperties(Bundle.BundleType bundleType) {
 
         var inputTopic = "patient";
         // match by entry (resource)
@@ -425,6 +425,7 @@ class FhirPathMatcherTests {
         var patientPatch = new Patient();
 
         var bundle = new Bundle();
+        bundle.setType(bundleType);
         bundle.addEntry(new BundleEntryComponent().setResource(patientPatch));
 
         var matcherProps = new MatcherProperties();
@@ -436,7 +437,6 @@ class FhirPathMatcherTests {
             Map.of(inputTopic, List.of(matcherProps)));
         var result = matcher.match(new Record<>("key", bundle, 0), inputTopic);
 
-        assertThat(result.value().getType()).isEqualTo(
-            Bundle.BundleType.TRANSACTION);
+        assertThat(result.value().getType()).isEqualTo(bundleType);
     }
 }
