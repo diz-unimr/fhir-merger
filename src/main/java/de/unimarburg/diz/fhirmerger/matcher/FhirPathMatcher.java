@@ -6,8 +6,6 @@ import org.apache.kafka.streams.processor.api.Record;
 import org.hl7.fhir.instance.model.api.IBase;
 import org.hl7.fhir.r4.hapi.fluentpath.FhirPathR4;
 import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent;
-import org.hl7.fhir.r4.model.Bundle.BundleType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -26,15 +24,17 @@ public class FhirPathMatcher extends BaseMatcher {
 
     @Autowired
     public FhirPathMatcher(FhirPathR4 engine,
-                           @Qualifier("matcherProperties") Map<String, List<MatcherProperties>> matcherProps) {
+                           @Qualifier("matcherProperties")
+                           Map<String, List<MatcherProperties>> matcherProps) {
         this.matchers = matcherProps
-                .values()
+            .values()
+            .stream()
+            .flatMap(x -> x
                 .stream()
-                .flatMap(x -> x
-                        .stream()
-                        .filter(p -> TYPE.equals(p.getType())))
-                .collect(
-                        Collectors.toMap(MatcherProperties::getTopic, MatcherProperties::getExpression));
+                .filter(p -> TYPE.equals(p.getType())))
+            .collect(
+                Collectors.toMap(MatcherProperties::getTopic,
+                    MatcherProperties::getExpression));
         this.engine = engine;
     }
 
@@ -47,7 +47,8 @@ public class FhirPathMatcher extends BaseMatcher {
     }
 
     @Override
-    public Record<String, Bundle> match(Record<String, Bundle> record, String topic) {
+    public Record<String, Bundle> match(Record<String, Bundle> record,
+                                        String topic) {
 
         var bundle = record.value();
         var matches = match(bundle, topic);
@@ -60,15 +61,12 @@ public class FhirPathMatcher extends BaseMatcher {
             return record.withValue(b);
         }
 
-        var result = new Bundle();
-        // Bundle type is 'transaction' by default
-        result.setType(BundleType.TRANSACTION);
-        result.setMeta(bundle.getMeta());
-        result.setEntry(matches
-                .stream()
-                .map(BundleEntryComponent.class::cast)
-                .toList());
-        return record.withValue(result);
+
+        bundle.setEntry(bundle.getEntry()
+            .stream()
+            .filter(matches::contains)
+            .toList());
+        return record.withValue(bundle);
     }
 
     @Override
