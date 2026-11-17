@@ -6,12 +6,15 @@ import org.apache.kafka.streams.processor.api.Record;
 import org.hl7.fhir.r4.hapi.fluentpath.FhirPathR4;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent;
+import org.hl7.fhir.r4.model.CanonicalType;
 import org.hl7.fhir.r4.model.CodeType;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Condition;
 import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.Encounter;
 import org.hl7.fhir.r4.model.Location;
+import org.hl7.fhir.r4.model.Meta;
+import org.hl7.fhir.r4.model.Observation;
 import org.hl7.fhir.r4.model.Organization;
 import org.hl7.fhir.r4.model.Parameters;
 import org.hl7.fhir.r4.model.Parameters.ParametersParameterComponent;
@@ -35,6 +38,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class FhirPathMatcherTests {
 
@@ -438,5 +442,57 @@ class FhirPathMatcherTests {
         var result = matcher.match(new Record<>("key", bundle, 0), inputTopic);
 
         assertThat(result.value().getType()).isEqualTo(bundleType);
+    }
+
+    @Test
+    void matchFiltersObservationFromIcu() {
+
+        var inputTopic = "adt";
+        var expression = """
+            Bundle.entry.where(resource.meta.where(profile.contains('modul-icu')))""";
+
+        var obs =
+            new Observation().setMeta(new Meta().setProfile(List.of(
+                new CanonicalType(
+                    "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/koerpergewicht|2025.0.4"))));
+
+        var bundle = new Bundle();
+        bundle.addEntry(new BundleEntryComponent().setResource(obs));
+
+        var matcherProps = new MatcherProperties();
+        matcherProps.setTopic(inputTopic);
+        matcherProps.setExpression(expression);
+        matcherProps.setType(FhirPathMatcher.TYPE);
+
+        var matcher = new FhirPathMatcher(new FhirPathR4(FhirContext.forR4()),
+            Map.of(inputTopic, List.of(matcherProps)));
+        var result = matcher.match(new Record<>("key", bundle, 0), inputTopic);
+
+        assertThat(result
+            .value()
+            .getEntryFirstRep()).isEqualTo(bundle.getEntryFirstRep());
+    }
+
+    @Test
+    void matchTakesWholeBundle() {
+
+        var inputTopic = "test";
+        var expression = "Bundle";
+
+        var obs = new Observation();
+
+        var bundle = new Bundle();
+        bundle.addEntry(new BundleEntryComponent().setResource(obs));
+
+        var matcherProps = new MatcherProperties();
+        matcherProps.setTopic(inputTopic);
+        matcherProps.setExpression(expression);
+        matcherProps.setType(FhirPathMatcher.TYPE);
+
+        var matcher = new FhirPathMatcher(new FhirPathR4(FhirContext.forR4()),
+            Map.of(inputTopic, List.of(matcherProps)));
+        var result = matcher.match(new Record<>("key", bundle, 0), inputTopic);
+
+        assertEquals(result.value(), bundle);
     }
 }
